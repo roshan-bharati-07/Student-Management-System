@@ -22,6 +22,7 @@ nodeCron.schedule("0 0 * * *", async () => {
     if (holiday.isTemporary) {
       await holiday.deleteOne();
     }
+    
   } catch (error) {
     console.error("Error in attendance status update job:", error);
   }

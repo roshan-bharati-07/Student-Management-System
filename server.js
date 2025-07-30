@@ -11,9 +11,9 @@ import attendenceRoutes from './src/routes/attendence.route.js';
 import receptionistRoutes from './src/routes/receptionist.route.js';
 
 import './src/jobs/removeStudent.job.js';
-// import './src/jobs/checkHolidays.job.js';
+import './src/jobs/checkHolidays.job.js';
 import './src/worker/attendence.worker.js';
-// import './src/worker/sms.worker.js';
+import './src/worker/sms.worker.js';
 
 
 dotenv.config();

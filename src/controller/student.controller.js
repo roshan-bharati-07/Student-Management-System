@@ -34,7 +34,8 @@ const studentRegister = asyncHandler(async (req, res, next) => {
         contact_number,
         email,
         faculty,
-        class_section,
+        grade,
+        section,
         address,
         guardian_name,
         role,
@@ -52,7 +53,7 @@ const studentRegister = asyncHandler(async (req, res, next) => {
         !contact_number ||
         !email ||
         !faculty ||
-        !class_section ||
+        !grade || !section ||
         !guardian_name ||
         !shift ||
         !address ||
@@ -69,19 +70,19 @@ const studentRegister = asyncHandler(async (req, res, next) => {
         return next(new apiError(400, 'Student already registered'));
     }
 
-    const section = await Section.findOne({ name: class_section });
+    const Section = await Section.findOne({ name: class_section });
 
-    if (!section) {
+    if (!Section) {
         return next(new apiError(404, 'Section not found'));
     }
 
-    const subjects = section.subjectsTaught;
+    const subjects = Section.subjectsTaught;
 
     if (!Array.isArray(subjects) || subjects.length !== 6) {
         return next(new apiError(400, 'Subject must be an array of 6'));
     }
 
-    const teachers = section.teachersEnrolled
+    const teachers = Section.teachersEnrolled
 
 
     if (!teachers || teachers.length === 0) {
@@ -101,7 +102,8 @@ const studentRegister = asyncHandler(async (req, res, next) => {
         email,
         faculty,
         subjects,
-        class_section,
+        grade,
+        section,
         guardian_name,
         address,
         role,
@@ -120,7 +122,7 @@ const studentRegister = asyncHandler(async (req, res, next) => {
 
     // here using mongoose.session() is worthy 
 
-    const addStudentToSection = await section.updateOne({ $addToSet: { studentsEnrolled: student._id } });
+    const addStudentToSection = await Section.updateOne({ $addToSet: { studentsEnrolled: student._id } });
 
     if (addStudentToSection.modifiedCount === 0) {
         return next(new apiError(500, 'Failed to add student to section, Try Again'));
@@ -409,7 +411,7 @@ const updateTeacherDetails = asyncHandler(async (req, res, next) => {
         return next(new apiError(400, 'Teacher has not changed'));
     }
 
-    const section = await Section.findOne({ name: student.class_section });
+    const section = await Section.findOne({ name: student.section });
     if (!section) {
         return next(new apiError(404, 'No section found with this name'));
     }
