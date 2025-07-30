@@ -589,6 +589,111 @@ const resentVerificationCode = asyncHandler(async (req, res, next) => {
 
 });
 
+// remove teacher 
+
+// remove the student
+const removeStudent = asyncHandler(async (req, res, next) => {
+    const { studentId } = req.params;
+
+    if (!studentId) {
+        return next(new apiError(400, 'Student ID is required'));
+    }
+
+    const session = await mongoose.startSession();
+
+    try {
+        await session.withTransaction(async () => {
+            const student = await Student.findByIdAndDelete(studentId).session(session);
+            if (!student) {
+                throw new apiError(404, 'Student not found or already deleted');
+            }
+
+            await Admin.updateOne(
+                {},
+                { $pull: { students: studentId } },
+                { session }
+            );
+
+            await Section.updateMany(
+                { enrolled_students: studentId },
+                {
+                    $pull: { enrolled_students: studentId },
+                    $set: { isStudentChanged: true }
+                },
+                { session }
+            );
+        });
+
+        session.endSession();
+
+        return res.status(200).json(
+            new apiResponse(200, {}, 'Student deleted successfully')
+        );
+
+
+    } catch (error) {
+        session.endSession();
+
+        if (error instanceof apiError) {
+            return next(error);
+        }
+
+        return next(new apiError(500, 'Failed to delete student properly'));
+    }
+});
+
+// change student section 
+
+// change student section 
+const changeStudentSections = asyncHandler(async (req, res, next) => {
+    const { studentId, newSectionName } = req.body
+    if (!studentId || !newSectionName) {
+        return next(new apiError(400, 'studentId and new section name is required'))
+    }
+
+    const student = await Student.findOne({
+        studentId
+    })
+
+    if (!student) {
+        return next(new apiError(404, 'student not found'))
+    }
+
+    const oldSection = await Section.findOne({
+        name: student.class_section
+    })
+
+    if (!oldSection) {
+        return next(new apiError(404, 'old section not found'))
+    }
+
+    const newSection = await Section.findOne({
+        name: newSectionName
+    })
+
+    if (!newSection) {
+        return next(new apiError(404, 'new section not found'))
+    }
+
+    student.class_section = newSectionName
+    student.subjects = newSection.subjects
+    student.didTeacherChanged = true
+    await student.save()
+
+    oldSection.enrolledStudents.pull(studentId)
+    oldSection.isStudentChanged = true
+    await oldSection.save()
+
+    newSection.enrolledStudents.push(studentId)
+    oldSection.isStudentChanged = true
+    await newSection.save()
+
+    return res.status(200).json(
+        new apiResponse(200, {}, 'student section changed successfully')
+    );
+
+})
+
 
 export {
     studentRegister,
@@ -600,5 +705,7 @@ export {
     addRemainingStudentDetails,
     getStudentDetails,
     resentVerificationCode,
-    updateTeacherDetails
+    updateTeacherDetails,
+    removeStudent,
+    changeStudentSections
 };

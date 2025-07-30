@@ -44,7 +44,6 @@ app.get('/', (_, res) => {
 });
 
 app.use('/student', studentRoutes);
-app.use('/teacher', teacherRoutes);
 app.use('/admin', adminRoutes);
 app.use('/section', sectionRoutes);
 app.use('/attendence', attendenceRoutes);

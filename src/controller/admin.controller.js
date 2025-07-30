@@ -410,119 +410,6 @@ const getAdminDetails = asyncHandler(async (req, res, next) => {
     }));
 })
 
-// this is done at the start of the session 
-const updateTeacherNewSection = asyncHandler(async (req, res, next) => {
-
-    if (!req.file) {
-        return next(new apiError(400, 'File is not uploaded'));
-    }
-
-    const filePath = req.file?.path;
-
-    let workbook;
-
-    try {
-        workbook = XLSX.readFile(filePath);
-    } catch (err) {
-        await fs.unlink(filePath);
-        return next(new apiError(400, 'Unable to read Excel file'));
-    }
-
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-    rows = rows
-        .map(row => {
-            const sections = String(row.sections || '')
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
-
-            return {
-                teacherId: String(row.id || '').trim(),
-                sections,
-            };
-        })
-        .filter(r => r.teacherId && r.sections.length);
-
-
-    if (!rows.length) {
-        await fs.unlink(filePath);
-        return next(new apiError(400, 'No valid data found in the Excel file'));
-    }
-
-    const session = await mongoose.startSession();
-
-    try {
-        await session.withTransaction(async () => {
-            for (const { teacherId, sections } of rows) {
-                const teacher = await Teacher.findOneAndUpdate(
-                    { teacherId },
-                    {
-                        $set: {
-                            current_teaching_class_sections: sections,   // yo ta array ho add hunxa 
-                        },
-                    },
-                    { new: true, session }
-                );
-
-                if (!teacher) {
-                    return next(new apiError(404, 'Teacher not found'));
-                }
-
-
-                for (const sectionName of sections) {
-
-                    await Section.updateOne(
-                        { name: sectionName },
-                        { $addToSet: { teachersEnrolled: teacher._id } },
-                        { session }
-                    );
-                }
-
-                // this is not imp, because teacher section is allocated before registrating student 
-                // remember this is done once student started to join class not during the paper registration phase 
-
-                // await Student.updateMany(
-                //     { class_section: { $in: sections } },
-                //     { $set: { didTeacherChanged: true } },
-                //     { session }
-                // );
-            }
-        });
-        return res.status(200).json(
-            new apiResponse(
-                200,
-                { updatedCount: rows.length },
-                'Teachers and Section updated successfully'
-            )
-        );
-
-    } catch (err) {
-        return next(new apiError(500, 'Failed to update teachers and section enrolled teacher'));
-    } finally {
-        session.endSession();
-        await fs.unlink(filePath);
-    }
-});
-
-const clearEnrolledTeacher = asyncHandler(async (req, res, next) => {
-
-    const section = await Section.updateMany({}, {
-        $set: {
-            teachersEnrolled: []
-        }
-    })
-
-    if (section.modifiedCount === 0) {
-        return next(new apiError(400, 'Failed to clear enrolled teacher'))
-    }
-
-    return res.status(200).json(
-        new apiResponse(200, {}, 'enrolled teacher cleared successfully')
-    );
-
-})
 
 // this is created by admin, so it has to be passed through auth middleware
 const receptionistRegister = asyncHandler(async (req, res, next) => {
@@ -557,148 +444,6 @@ const receptionistRegister = asyncHandler(async (req, res, next) => {
 })
 
 
-// change student section 
-const changeStudentSections = asyncHandler(async (req, res, next) => {
-    const { studentId, newSectionName } = req.body
-    if (!studentId || !newSectionName) {
-        return next(new apiError(400, 'studentId and new section name is required'))
-    }
-
-    const student = await Student.findOne({
-        studentId
-    })
-
-    if (!student) {
-        return next(new apiError(404, 'student not found'))
-    }
-
-    const oldSection = await Section.findOne({
-        name: student.class_section
-    })
-
-    if (!oldSection) {
-        return next(new apiError(404, 'old section not found'))
-    }
-
-    const newSection = await Section.findOne({
-        name: newSectionName
-    })
-
-    if (!newSection) {
-        return next(new apiError(404, 'new section not found'))
-    }
-
-    student.class_section = newSectionName
-    student.subjects = newSection.subjects
-    student.didTeacherChanged = true
-    await student.save()
-
-    oldSection.enrolledStudents.pull(studentId)
-    oldSection.isStudentChanged = true
-    await oldSection.save()
-
-    newSection.enrolledStudents.push(studentId)
-    oldSection.isStudentChanged = true
-    await newSection.save()
-
-    return res.status(200).json(
-        new apiResponse(200, {}, 'student section changed successfully')
-    );
-
-})
-
-// remove the student
-const removeStudent = asyncHandler(async (req, res, next) => {
-    const { studentId } = req.params;
-
-    if (!studentId) {
-        return next(new apiError(400, 'Student ID is required'));
-    }
-
-    const session = await mongoose.startSession();
-
-    try {
-        await session.withTransaction(async () => {
-            const student = await Student.findByIdAndDelete(studentId).session(session);
-            if (!student) {
-                throw new apiError(404, 'Student not found or already deleted');
-            }
-
-            await Admin.updateOne(
-                {},
-                { $pull: { students: studentId } },
-                { session }
-            );
-
-            await Section.updateMany(
-                { enrolled_students: studentId },
-                {
-                    $pull: { enrolled_students: studentId },
-                    $set: { isStudentChanged: true }
-                },
-                { session }
-            );
-        });
-
-        session.endSession();
-
-        return res.status(200).json(
-            new apiResponse(200, {}, 'Student deleted successfully')
-        );
-
-
-    } catch (error) {
-        session.endSession();
-
-        if (error instanceof apiError) {
-            return next(error);
-        }
-
-        return next(new apiError(500, 'Failed to delete student properly'));
-    }
-});
-
-// remove the teacher
-const removeTeacher = asyncHandler(async (req, res, next) => {
-
-    const { teacherId } = req.params;
-
-    if (!teacherId) {
-        return next(new apiError(400, 'Teacher ID is required'));
-    }
-
-    const session = await mongoose.startSession();
-
-    try {
-        await session.withTransaction(async () => {
-            const teacher = await Teacher.findByIdAndDelete(teacherId).session(session);
-            if (!teacher) {
-                throw new apiError(404, 'Teacher not found or already deleted');
-            }
-
-            await Admin.updateOne(
-                {},
-                { $pull: { teachers: teacherId } },
-                { session }
-            );
-        });
-
-        session.endSession();
-        return res.status(200).json(
-            new apiResponse(200, {}, 'Teacher deleted successfully')
-        );
-
-
-    } catch (error) {
-        session.endSession();
-
-        if (error instanceof apiError) {
-            return next(error);
-        }
-
-        return next(new apiError(500, 'Failed to delete teacher properly'));
-    }
-});
 
 // search the student to make some updation in their field 
 const searchStudent = asyncHandler(async (req, res, next) => {
@@ -708,7 +453,7 @@ const searchStudent = asyncHandler(async (req, res, next) => {
     if (name) filter.full_name = { $regex: name, $options: 'i' };
     if (faculty) filter.faculty = faculty;
     if(grade) filter.grade = grade;
-    if (class_section) filter.class_section = class_section;
+    if (section) filter.section = section;
 
     const admin = await Admin.findOne()
         .populate({
@@ -716,8 +461,6 @@ const searchStudent = asyncHandler(async (req, res, next) => {
             match: filter,
             select: 'full_name studentId grade faculty section'   // remember select will provide _id also as defa
         });
-
-
 
 
     if (!admin) {
@@ -795,8 +538,6 @@ export {
     getAdminDetails,
     updateTeacherNewSection,
     changeStudentSections,
-    removeStudent,
-    removeTeacher,
     searchStudent,
     resentVerificationCode,
     clearEnrolledTeacher,
