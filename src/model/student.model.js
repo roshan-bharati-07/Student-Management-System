@@ -76,8 +76,13 @@ const studentSchema = new Schema({
     lowercase: true,
     required: true
   },
+  grade: {
+    type: String,
+    required: true,
+    default:"11"
+  },
 
-  class_section: {
+  section: {
     type: String,
     trim: true,
     lowercase: true,

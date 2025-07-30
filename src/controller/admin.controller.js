@@ -470,7 +470,6 @@ const updateTeacherNewSection = asyncHandler(async (req, res, next) => {
                     return next(new apiError(404, 'Teacher not found'));
                 }
 
-                const clearedSections = new Set();
 
                 for (const sectionName of sections) {
 
@@ -703,22 +702,23 @@ const removeTeacher = asyncHandler(async (req, res, next) => {
 
 // search the student to make some updation in their field 
 const searchStudent = asyncHandler(async (req, res, next) => {
-    const { name, faculty, class_section } = req.query;
+    const { name, faculty, grade, section } = req.query;
 
     const filter = {};
     if (name) filter.full_name = { $regex: name, $options: 'i' };
     if (faculty) filter.faculty = faculty;
+    if(grade) filter.grade = grade;
     if (class_section) filter.class_section = class_section;
 
     const admin = await Admin.findOne()
         .populate({
             path: 'students',
             match: filter,
-            select: 'full_name studentId faculty class_section'
+            select: 'full_name studentId grade faculty section'   // remember select will provide _id also as defa
         });
 
 
-    console.log(admin)
+
 
     if (!admin) {
         return next(new apiError(404, 'Admin not found'));
@@ -780,6 +780,8 @@ const resentVerificationCode = asyncHandler(async (req, res, next) => {
 
 });
 
+// update student section and class from 11 to 12 
+
 
 export {
     adminRegister,
@@ -798,6 +800,6 @@ export {
     searchStudent,
     resentVerificationCode,
     clearEnrolledTeacher,
-    receptionistRegister
+    receptionistRegister,
 }
 
