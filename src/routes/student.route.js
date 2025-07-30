@@ -1,8 +1,6 @@
-
-
 import express from 'express';
+
 import {
-  studentRegister,
   studentLogin,
   getStudentDetails,
   forgotPassword,
@@ -12,7 +10,6 @@ import {
   resentVerificationCode,
   addRemainingStudentDetails,
 
-
 } from '../controller/student.controller.js';
 
 import authStudentMiddleware from '../middleware/authStudent.middleware.js';
@@ -21,7 +18,6 @@ import authStudentMiddleware from '../middleware/authStudent.middleware.js';
 const router = express.Router();
 
 // Auth routes
-router.post('/register', studentRegister);  // ✅
 router.post('/login', studentLogin);   // ✅
 router.post('/forget-password',authStudentMiddleware, forgotPassword); // ✅
 router.post('/verify-code/:code', authStudentMiddleware,verifyForgotPasswordCode); // ✅  
@@ -30,7 +26,5 @@ router.post('/reset-password',authStudentMiddleware, resetPassword); // ✅
 router.patch('/resend-code',authStudentMiddleware, resentVerificationCode); // ✅
 router.get('/profile', authStudentMiddleware, getStudentDetails); // ✅
 router.patch('/add-remaining-details', authStudentMiddleware, addRemainingStudentDetails); // ✅
-
-
 
 export default router;
