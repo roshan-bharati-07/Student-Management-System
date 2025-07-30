@@ -411,7 +411,7 @@ const updateTeacherDetails = asyncHandler(async (req, res, next) => {
         return next(new apiError(400, 'Teacher has not changed'));
     }
 
-    const section = await Section.findOne({ name: student.class_section });
+    const section = await Section.findOne({ name: student.section });
     if (!section) {
         return next(new apiError(404, 'No section found with this name'));
     }
