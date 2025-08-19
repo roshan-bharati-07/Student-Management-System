@@ -6,7 +6,6 @@ import { generateUsernameAndId } from '../utils/generateCredentials.js';
 import { sendCredentialsEmail } from '../utils/credentialsMailStudent.js';
 import { sendVerificationEmail } from '../utils/sendVerificationCode.js';
 import { generateVerificationCode } from '../utils/verificationCode.js';
-import { Teacher } from '../model/teacher.model.js';
 import { Section } from '../model/section.model.js';
 import { Admin } from '../model/admin.model.js';
 
@@ -23,7 +22,7 @@ const generateJwtToken = async (studentId) => {
 }
 
 
-// student register
+// student register = single student
 const studentRegister = asyncHandler(async (req, res, next) => {
     const {
         full_name,
@@ -145,8 +144,9 @@ return res.status(201).json(
     new apiResponse(201, {}, "Student register and Credentials sent successfully")
 );
 
-
 });
+
+
 
 
 // student login 
@@ -642,7 +642,7 @@ const removeStudent = asyncHandler(async (req, res, next) => {
     }
 });
 
-// change student section 
+
 
 // change student section 
 const changeStudentSections = asyncHandler(async (req, res, next) => {
@@ -695,6 +695,37 @@ const changeStudentSections = asyncHandler(async (req, res, next) => {
 })
 
 
+
+
+// search the student to make some updation in their field 
+const searchStudent = asyncHandler(async (req, res, next) => {
+    const { name, faculty, grade, section } = req.query;
+
+    const filter = {};
+    if (name) filter.full_name = { $regex: name, $options: 'i' };
+    if (faculty) filter.faculty = faculty;
+    if(grade) filter.grade = grade;
+    if (section) filter.section = section;
+
+    const admin = await Admin.findOne()
+        .populate({
+            path: 'students',
+            match: filter,
+            select: 'full_name studentId grade faculty section'   // remember select will provide _id also as defa
+        });
+
+
+    if (!admin) {
+        return next(new apiError(404, 'Admin not found'));
+    }
+    return res.status(200).json(
+        new apiResponse(200, admin.students, 'Matching students found')
+    );
+
+});
+
+
+
 export {
     studentRegister,
     studentLogin,
@@ -707,5 +738,6 @@ export {
     resentVerificationCode,
     updateTeacherDetails,
     removeStudent,
-    changeStudentSections
+    changeStudentSections,
+    searchStudent
 };

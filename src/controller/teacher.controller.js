@@ -4,7 +4,10 @@ import apiError from '../utils/apiError.js';
 import { Teacher } from '../model/teacher.model.js';
 import { Admin } from '../model/admin.model.js';
 import { generateTeacherId } from '../utils/generateCredentials.js';
-
+import fs from 'fs/promises';
+import XLSX from 'xlsx';
+import mongoose from 'mongoose';
+import { Section } from '../model/section.model.js';
 
 const registerTeacher = asyncHandler(async (req, res, next) => {
     const {

@@ -131,9 +131,42 @@ return res.status(200).json(
 })
 
 
+// this is created by admin, so it has to be passed through auth middleware
+const receptionistRegister = asyncHandler(async (req, res, next) => {
+
+    // const id = req.admin._id;
+    // if(!id)  {
+    //     return next(new apiError(400, 'id is required'))
+    // }
+
+    const {
+        username,
+        password
+    } = req.body;
+
+    if (!username || !password) {
+        return next(new apiError(400, 'username and password is required'))
+    }
+
+    const receptionist = await Receptionist.create({
+        username,
+        password
+    })
+
+    if (!receptionist) {
+        return next(new apiError(400, 'Failed to create receptionist'))
+    }
+
+    return res.status(200).json(
+        new apiResponse(200, {}, 'receptionist created successfully')
+    );
+
+})
+
 
 
 export {
+    receptionistRegister,
     fetchAbsentStudentDetails,
     sendSMS,
     clearAbsenteeList,

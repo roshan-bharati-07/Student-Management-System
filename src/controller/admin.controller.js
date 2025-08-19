@@ -1,17 +1,11 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import apiResponse from '../utils/apiResponse.js';
 import apiError from '../utils/apiError.js';
-import { Student } from '../model/student.model.js';
 import { generateVerificationCode } from '../utils/verificationCode.js';
-import { Receptionist } from '../model/receptionist.model.js';
-import { Teacher } from '../model/teacher.model.js';
 import { Admin } from '../model/admin.model.js';
-import { Section } from '../model/section.model.js';
 import { sendVerificationEmail } from '../utils/sendVerificationCode.js';
 import jwt from 'jsonwebtoken';
-import fs from 'fs/promises';
-import XLSX from 'xlsx';
-import mongoose from 'mongoose';
+
 
 
 // generate Access Token from refresh token 
@@ -411,67 +405,6 @@ const getAdminDetails = asyncHandler(async (req, res, next) => {
 })
 
 
-// this is created by admin, so it has to be passed through auth middleware
-const receptionistRegister = asyncHandler(async (req, res, next) => {
-
-    // const id = req.admin._id;
-    // if(!id)  {
-    //     return next(new apiError(400, 'id is required'))
-    // }
-
-    const {
-        username,
-        password
-    } = req.body;
-
-    if (!username || !password) {
-        return next(new apiError(400, 'username and password is required'))
-    }
-
-    const receptionist = await Receptionist.create({
-        username,
-        password
-    })
-
-    if (!receptionist) {
-        return next(new apiError(400, 'Failed to create receptionist'))
-    }
-
-    return res.status(200).json(
-        new apiResponse(200, {}, 'receptionist created successfully')
-    );
-
-})
-
-
-
-// search the student to make some updation in their field 
-const searchStudent = asyncHandler(async (req, res, next) => {
-    const { name, faculty, grade, section } = req.query;
-
-    const filter = {};
-    if (name) filter.full_name = { $regex: name, $options: 'i' };
-    if (faculty) filter.faculty = faculty;
-    if(grade) filter.grade = grade;
-    if (section) filter.section = section;
-
-    const admin = await Admin.findOne()
-        .populate({
-            path: 'students',
-            match: filter,
-            select: 'full_name studentId grade faculty section'   // remember select will provide _id also as defa
-        });
-
-
-    if (!admin) {
-        return next(new apiError(404, 'Admin not found'));
-    }
-    return res.status(200).json(
-        new apiResponse(200, admin.students, 'Matching students found')
-    );
-
-});
-
 // we have teacherId to the admin as they are very less 
 // so by just inputing teacherID we can get their details and make changes 
 
@@ -536,11 +469,6 @@ export {
     forgetPassword,
     verifyForgotPasswordCode,
     getAdminDetails,
-    updateTeacherNewSection,
-    changeStudentSections,
-    searchStudent,
     resentVerificationCode,
-    clearEnrolledTeacher,
-    receptionistRegister,
 }
 
