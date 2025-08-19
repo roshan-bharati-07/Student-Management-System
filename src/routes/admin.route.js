@@ -10,6 +10,7 @@ import {
     reset_password,
     getAdminDetails,
 } from '../controller/admin.controller.js';
+
 import {
     holidayController,     // remember to add the multer as a single file => middleware 
     addOtherHoliday
@@ -19,10 +20,11 @@ import {
     studentRegister,
     removeStudent,
     changeStudentSections,
+    searchStudent
 } from '../controller/student.controller.js';
 
 import {
-    teacherRegister,
+    registerTeacher,
     clearEnrolledTeacher,
     updateTeacherNewSection,
     removeTeacher
@@ -31,6 +33,10 @@ import {
 import {
     registerSection
 } from '../controller/section.controller.js';
+
+import {
+    receptionistRegister
+} from '../controller/receptionist.controller.js';
 
 
 import authMiddleware from '../middleware/auth.middleware.js';
@@ -55,15 +61,16 @@ router.post('/add-holiday', authMiddleware, upload.single('file'), holidayContro
 router.post('/add-other-holiday', authMiddleware, addOtherHoliday); 
 
 // student routes
-router.post('/student/register', studentRegister);   // this is for the single student registration
+router.post('/student/register', upload.single('file'), studentRegister);   // this is for the single student registration
 // for the multiple student registration 
 // router.post('/student/register-batch', authMiddleware, upload.single('file'), studentRegister); 
 router.patch('/change-student-section', authMiddleware, changeStudentSections); 
 router.patch('/remove-student', authMiddleware, removeStudent);
+router.post('/search-student', authMiddleware, searchStudent);
 
 
 // teacher routes 
-router.post('/teacher/register', authMiddleware, upload.single('file'), teacherRegister);
+router.post('/teacher/register', authMiddleware, upload.single('file'), registerTeacher);
 router.post('/update-teacher', authMiddleware, upload.single('file'), updateTeacherNewSection);
 router.patch('/clear-enrolled-teacher', clearEnrolledTeacher);  
 

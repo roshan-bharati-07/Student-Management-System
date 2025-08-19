@@ -1,4 +1,4 @@
-import { smsQueue } from "../../config/queue/attendenceSMS.queue.js";
+import { smsQueue } from "../queue/attendenceSMS.queue.js";
 
 
 smsQueue.process(async (job) => {

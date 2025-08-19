@@ -4,7 +4,7 @@ import cors from 'cors';
 
 import connectDB from './src/db/index.db.js';
 import studentRoutes from './src/routes/student.route.js';
-import teacherRoutes from './src/routes/teacher.route.js';
+
 import adminRoutes from './src/routes/admin.route.js'
 import sectionRoutes from './src/routes/section.route.js';
 import attendenceRoutes from './src/routes/attendence.route.js';

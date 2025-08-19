@@ -9,11 +9,12 @@ import {
   resetPassword,
   resentVerificationCode,
   addRemainingStudentDetails,
+  // studentRegisterBatch
 
 } from '../controller/student.controller.js';
 
 import authStudentMiddleware from '../middleware/authStudent.middleware.js';
-
+import {upload} from '../middleware/multer.middleware.js';
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.post('/reset-password',authStudentMiddleware, resetPassword); // ✅
 router.patch('/resend-code',authStudentMiddleware, resentVerificationCode); // ✅
 router.get('/profile', authStudentMiddleware, getStudentDetails); // ✅
 router.patch('/add-remaining-details', authStudentMiddleware, addRemainingStudentDetails); // ✅
+// router.post('/student-batch', upload.single('file'), studentRegisterBatch)
 
 export default router;
